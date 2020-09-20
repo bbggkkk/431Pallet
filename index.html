@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="worker-src https: 'unsafe-eval'">
+    <title>431Pallet</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://bbggkkk.github.io/431CSS/css/431css.min.css" rel="stylesheet">
+    <link href="./css/import.css" rel="stylesheet">
+</head>
+
+<body class="w100p h100p over-h main-bg" os="none">
+
+    <div class="app w100p h100p over-h">
+        <header class="w100p flex-box flex-center flex-middle pos-ab"
+                style="height:240px; top:0; -webkit-app-region: drag;"
+                data-min-height="36"
+                data-min-size="18">
+            <h1 class="title t-normal t-gray100" style="font-size:40px;">Pallet</h1>
+        </header>
+        <div class="w100p h100p body-wrap flex-box flex-col flex-left pos-re">
+            <div    class='body w100p flex-fill border-box over-y-auto' style="padding-top:240px; top:0; -webkit-overflow-scrolling:touch;"
+                    ui-scroll="true">
+
+                <div>
+                    <ul class="pallet-list" data-ui-list="palletList">
+                        <li class="pallet-item flex-box hide" data-ui-list-contents-root data-ui-list-key="id">
+                            <div class="pallet-color" style="background:#1167bd;" data-ui-list-contents="color" ui-form="color2bg"></div>
+                            <div class="pallet-info">
+                                <p class="t-white" data-ui-list-contents="name">431Blue</p>
+                                <p  class="t-gray400 t-small" data-ui-list-contents="color">#1167BD</p>
+                            </div>
+                            <div class="pallet-control">
+                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy">
+                                    content_copy
+                                    <span class="hide" data-ui-list-contents="color" ui-fn-input="color" ui-fn-name="copyElement"></span>
+                                </button>
+                                <!-- <button class="btn-open w32 h32 material-icons t-basic">open_in_new</button> -->
+                            </div>
+                        </li>
+
+                        <li class="pallet-item flex-box" data-ui-list-contents-default="last">
+                            <div class="pallet-control show">
+                                <button class="btn-add-color w48 h48 material-icons" data-modal="addColor">add</button>
+                            </div>
+                        </li>
+                    </ul>
+                    <footer class="w100p h60 main-bg"></footer>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <ui-modal class="hide addColor">
+        <div class="modal-window main-bg w50p mxw320 mnw240">
+            <h1 class="t-basic t-normal t-gray100 mb20">Add Color</h1>
+            <div class="flex-fill pb20">
+                <div class="mb20">
+                    <p class="t-gray400">Name</p>
+                    <input class="input w100p t-gray100 t-basic mt5 pb5 border-bottom" placeholder="Greate Color"
+                           data-modal-reset
+                           ui-fn-input="name" ui-fn-name="addColor">
+                </div>
+                <div>
+                    <p class="t-gray400">Code</p>
+                    <input class="input w100p t-gray100 t-basic mt5 pb5 border-bottom" placeholder="#009944"
+                           data-modal-reset
+                           ui-fn-input="color" ui-fn-name="addColor">
+                </div>
+            </div>
+            <div class="flex-box flex-right flex-middle">
+                <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/add" ui-fn-name="addColor">Save</div>
+                <div class="ui-btn ui-btn-transparent flat t-gray300" data-modal-close>Cancle</div>
+            </div>
+        </div>
+    </ui-modal>
+
+    <ui-system class="titlebar">
+        <ui-windows os="Windows">
+            <div class="flex-box flex-right flex-middle w100p h100p">
+                <!-- <button class="btn-squre material-icons main-bg w36 h36 flex-box flex-middle flex-center" data-system-minimize>minimize</button> -->
+                <!-- <button class="btn-squre material-icons main-bg w36 h36 flex-box flex-middle flex-center" data-system-maximaize>crop_square</button> -->
+                <button class="btn-squre material-icons w36 h36 flex-box flex-middle flex-center" data-system-close>close</button>
+            </div>
+        </ui-windows>
+    </ui-system>
+
+    <script>
+
+        let ss1view = window.ss1view = {};
+
+        let fn_ = {
+            "debug/consoleLog" : function(input){
+                console.log(input);
+            },
+            "debug/alert" : function(input){
+                alert(input);
+            },
+            "data/localStorage/set" : function(input){
+                localStorage.setItem(input.name,JSON.stringify(input.data));
+            },
+            "data/localStorage/update" : function(input){
+                let data = input.data;
+                let list = input.list;
+                let key = Object.keys(list)[0];
+                list[key].push(data);
+                localStorage.setItem(key,JSON.stringify(input.list[key]));
+            },
+            "data/localStorage/get" : function(input){
+                let rt = {};
+                rt[input.name] = JSON.parse(localStorage.getItem(input.name));
+                return rt;
+            },
+            "data/localStorage/remove" : function(input){
+                localStorage.removeItem(input.name);
+            },
+            "data/getOS" : function(){
+                let os;
+                let agent = navigator.userAgent;
+                
+                if      (agent.indexOf("Windows") != -1)        os = "Windows";
+                else if (agent.indexOf("Macintosh") != -1)      os = "Mac";
+                else if (agent.indexOf("Linux") != -1 &&
+                        agent.indexOf("Android") != -1)         os = "Android";
+                else if (agent.indexOf("Linux") != -1)          os = "Linux";
+                else if (agent.indexOf("iPhone") != -1 ||
+                        agent.indexOf("iPad") != -1)           os = "iOS";
+                
+                return os;
+            },
+            "data/getApp" : function(){
+                let agent = navigator.userAgent;
+                let electron = agent.indexOf("Electron") != -1 ? true : false;
+
+                return electron;
+            },
+            "data/pallet" : function(){
+                let palletColor = ss1view.fn["data/localStorage/get"]({name:"palletList"});
+
+                if(!palletColor.palletList){
+                    palletColor = {
+                        palletList : [
+                            {id:1,grp:[],color:"#1167BD",name:"431blue"},
+                            {id:2,grp:[],color:"#FFC72C",name:"431Yellow"},
+                            {id:3,grp:[],color:"#E63D3D",name:"Danger"},
+                            {id:4,grp:[],color:"#009944",name:"Success"},
+                            {id:5,grp:[],color:"#33393F",name:"Gray"},
+                        ]
+                    };
+                    ss1view.fn["data/localStorage/set"]({name:"palletList",data:palletColor.palletList});
+                }
+                return palletColor;
+            },
+            "data/pallet/add" : function(input){
+                let input_ = input;
+                let list = ss1view.fn["data/localStorage/get"]({name:"palletList"});
+
+                
+                input_["grp"] = [];
+                input_["id"] = list.palletList.length+1;
+                list.palletList.sort((item1,item2) => {
+                    return item1.id > item2.id ? 1 : -1
+                }).forEach((item,i) => {
+                    if(item.id != i+1)  input_.id = i+1;
+                });
+
+                ss1view.fn["data/localStorage/update"]({list:ss1view.fn["data/localStorage/get"]({name:"palletList"}),data:input_});
+                uiListWrap();
+                
+            },
+            "data/list/remove" : function(input){
+                let list = input.name;
+                let id   = input.id;
+
+                let rt = list.filter(item => item.id != id);
+                return rt;
+            },
+
+
+            "app/context/pallet" : function(input){
+
+                let pallet = getUiList(document.querySelector(".pallet-list"));
+
+
+                if(!ss1view.fn["data/getApp"]()) return;
+                const { remote } = require('electron');
+                const { Menu, MenuItem } = remote;
+                
+                const menu = new Menu();
+                let rightClickColor;
+                let menuItem = [
+                    {
+                        label : "Edit",
+                        click(e,win,con) {
+                            console.log("Edit");
+                        }
+                    },{
+                        label : "Delete",
+                        click(e,win,con) {
+                            const key = "palletList"
+                            let list = ss1view.fn["data/localStorage/get"]({name:key});
+                            let rt = {};
+                            rt[key] = ss1view.fn["data/list/remove"]({name:list[key],id:rightClickColor});
+                            ss1view.fn["data/localStorage/set"]({name:key,data:rt[key]});
+                            uiListWrap(rt);
+                        }
+                    }
+                ];
+
+                menuItem.forEach(item => menu.append(new MenuItem(item)));
+                
+                pallet.forEach(item => {
+                    item.addEventListener("contextmenu",(e) => {
+                        rightClickColor = e.currentTarget.attributes["data-ui-list-key"].value;
+                        menu.popup({
+                            window : remote.getCurrentWindow()
+                        });
+                    });
+                });
+            }
+            
+        }
+        ss1view.fn = fn_;
+
+        let form_ = {
+            "debug/consoleLog" : function(data,key,item){
+                console.log(data);
+            },
+            color2bg : function(data,key,item){
+                item.style.background = data[key];
+                return;
+            }
+        }
+        ss1view.form = form_;
+
+        (function(){
+            uiListWrap();
+        })();
+
+        (function(){
+            if (!ss1view.fn["data/getApp"]())   return;
+            const titlebar = document.querySelector("ui-system.titlebar");
+
+            titlebar.addEventListener("click",function(e){
+                switch (e.target.attributes[1].name){
+                    case "data-system-minimize" :
+
+                        break;
+                    case "data-system-maximaize" :
+                        window.maximize()
+                        break;
+                    case "data-system-close" :
+                        window.close();
+                        break;
+                }
+            });
+        })();
+        (function(){
+            let callModal = [...document.querySelectorAll("[data-modal]")];
+            callModal.forEach(item => {
+                item.addEventListener("click",function(e){
+                    let modal = this.attributes["data-modal"].value;
+                    document.querySelector("."+modal).classList.remove("hide");
+                });
+            });
+
+            let modalClose = [...document.querySelectorAll("[data-modal-close]")];
+            modalClose.forEach(item => {
+                item.addEventListener("click",function(e){
+                    let modal = this.closest("ui-modal");
+                    let resetInp = [...modal.querySelectorAll("[data-modal-reset]")];
+                    resetInp.forEach(item => item.value = "");
+                    modal.classList.add("hide");
+                });
+            });
+
+            let fnEle = [...document.querySelectorAll("[ui-fn]")];
+            fnEle.forEach(item => {
+                item.addEventListener("click",function(e){
+                    let fn = this.attributes["ui-fn"].value;
+                    let inpNm = this.attributes["ui-fn-name"].value;
+                    let inpEle = [...document.querySelectorAll("[ui-fn-name="+inpNm+"]")];
+
+                    let input = {};
+
+                    inpEle.filter(item => item.attributes["ui-fn-input"]).forEach(item => {
+                        input[item.attributes["ui-fn-input"].value] = item.value;
+                    });
+
+                    ss1view.fn[fn](input);
+                    inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
+                    
+                });
+            });
+        })();
+
+        (function(){
+            let os = ss1view.fn["data/getOS"]();
+            let app = ss1view.fn["data/getApp"]();
+            document.querySelector("body").setAttribute("os",os);
+            document.querySelector("body").setAttribute("app",app);
+        })();
+
+        (function(){
+            const header = document.querySelector("header");
+            const title = document.querySelector("header > .title");
+            const body = document.querySelector(".body");
+            
+            let headerData = {
+                stdHeight:header.offsetHeight,
+                minHeight:Number(header.attributes["data-min-height"].value),
+                stdSize:Number(getComputedStyle(title).getPropertyValue("font-size").replace("px","")),
+                minSize:Number(header.attributes["data-min-size"].value)
+            };
+            headerData.mvHeight = headerData.stdHeight - headerData.minHeight;
+            headerData.mvSize = headerData.stdSize - headerData.minSize;
+            headerData.mvSizeStep = 1/(headerData.mvHeight/headerData.mvSize);
+        
+            let bodyChildren = [...body.children][0];
+            bodyChildren.style.height = body.offsetHeight-headerData.minHeight+"px";  
+
+            body.addEventListener("scroll",function(e){
+                header.style.height = (headerData.stdHeight-body.scrollTop) < headerData.minHeight ? headerData.minHeight+"px" : headerData.stdHeight-body.scrollTop+"px";
+                title.style.fontSize = headerData.stdSize-(headerData.mvSizeStep*body.scrollTop) < headerData.minSize ? headerData.minSize+"px" : headerData.stdSize-(headerData.mvSizeStep*body.scrollTop)+"px";
+            });
+
+            window.addEventListener("resize",function(e){
+                bodyChildren.style.height = body.offsetHeight-headerData.minHeight+"px";    
+            });
+            
+        })();
+
+        
+        function formData(fnName,data,key,item){
+            let rt = ss1view.form[fnName](data,key,item);
+            if(!rt) rt = "";
+            return rt;
+        }
+
+        function setData(data,root,uiList) {
+            let keys = Object.keys(data);
+            let root_= root ? root : document;
+            keys.forEach(item => {
+                let data_={};
+                data_[item] = data[item];
+                setDataAlone(data_,root_,uiList);
+            });
+
+            function setDataAlone(data,root,uiList) {
+                let key = Object.keys(data)[0];
+                let sep = uiList ? "data-ui-list-contents" : "data-set"
+                let ele = [...root.querySelectorAll("["+sep+"="+key+"]")];
+
+                ele.forEach(item => {
+                    let fnName = item.attributes["ui-form"] ? item.attributes["ui-form"].value : "";
+                    let rt = data[key];
+                    if(fnName != "")     rt = formData(fnName,data,key,item);
+                    item.innerHTML = rt;
+                });
+            }
+        }
+
+        function uiList(list){
+            let key  = Object.keys(list)[0];
+            let ele  = document.querySelector("[data-ui-list="+key+"]");
+            let root = ele.querySelector("[data-ui-list-contents-root]");
+            let dflt = [...ele.querySelectorAll("[data-ui-list-contents-default]")];
+            let dfltLast = [...ele.querySelectorAll("[data-ui-list-contents-default=last]")];
+            let rmv  = [...ele.children].filter((item,i) => {
+                return !item.attributes["data-ui-list-contents-root"] && !item.attributes["data-ui-list-contents-default"]
+            });
+            rmv.forEach(item => item.remove());
+
+            let rt = [];
+
+            list[key].forEach((item,i) => {
+                let contents = root.cloneNode(true);
+                contents.classList.remove("hide");
+                contents.removeAttribute("data-ui-list-contents-root");
+                contents.setAttribute("data-ui-list-row",i);
+                contents.setAttribute("data-ui-list-key",item.id);
+                setData(item,contents,true);
+                ele.append(contents);
+                dfltLast[0].before(contents);
+
+                rt.push(contents);
+            });
+
+            return rt;
+        }
+        function getUiList(ele){
+            return [...ele.querySelectorAll("[data-ui-list-row")];
+        }
+
+        function uiListWrap(){
+            let palletColor = ss1view.fn["data/pallet"]();
+            uiList(palletColor);
+            ss1view.fn["app/context/pallet"]();
+        }
+
+    </script>
+    
+</body>
+</html>
