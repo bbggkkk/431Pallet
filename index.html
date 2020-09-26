@@ -33,7 +33,7 @@
                                 <p  class="t-gray400 t-small" data-ui-list-contents="color">#1167BD</p>
                             </div>
                             <div class="pallet-control">
-                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy">
+                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy" ui-fn-root=".pallet-item">
                                     content_copy
                                     <span class="hide" data-ui-list-contents="color" ui-fn-input="color" ui-fn-name="copyElement"></span>
                                 </button>
@@ -56,7 +56,7 @@
     
     <ui-modal class="hide addColor">
         <div class="modal-window main-bg w50p mxw320 mnw240">
-            <h1 class="t-basic t-normal t-gray100 mb20">Add Color</h1>
+            <h1 class="t-basic t-normal t-gray100 mb20" data-modal-reset="Add Color"    data-ui-contents="editYN">Add Color</h1>
             <div class="flex-fill pb20">
                 <div class="mb20">
                     <p class="t-gray400">Name</p>
@@ -178,6 +178,11 @@
                 let rt = list.filter(item => item.id != id);
                 return rt;
             },
+            "data/clipboard/copy" : function(input){
+                const {clipboard} = require("electron");
+                clipboard.writeText(input[Object.keys(input)[0]]);
+                console.log(input[Object.keys(input)[0]]);
+            },
 
 
             "app/context/pallet" : function(input){
@@ -187,15 +192,18 @@
 
                 if(!ss1view.fn["data/getApp"]()) return;
                 const { remote } = require('electron');
-                const { Menu, MenuItem } = remote;
+                const { Menu, MenuItem, clipboard } = remote;
+
                 
                 const menu = new Menu();
+
                 let rightClickColor;
                 let menuItem = [
                     {
                         label : "Edit",
                         click(e,win,con) {
                             console.log("Edit");
+                            document.querySelector(".btn-add-color").click();
                         }
                     },{
                         label : "Delete",
@@ -272,7 +280,13 @@
                 item.addEventListener("click",function(e){
                     let modal = this.closest("ui-modal");
                     let resetInp = [...modal.querySelectorAll("[data-modal-reset]")];
-                    resetInp.forEach(item => item.value = "");
+                    console.log(resetInp);
+                    resetInp.forEach(item => {
+                        if(item.tagName == "input")
+                        item.value = item.attributes["data-modal-reset"].value;
+                        else
+                        item.innerHTML = item.attributes["data-modal-reset"].value;
+                    });
                     modal.classList.add("hide");
                 });
             });
@@ -282,16 +296,23 @@
                 item.addEventListener("click",function(e){
                     let fn = this.attributes["ui-fn"].value;
                     let inpNm = this.attributes["ui-fn-name"].value;
-                    let inpEle = [...document.querySelectorAll("[ui-fn-name="+inpNm+"]")];
+                    let root  = this.closest(this.attributes["ui-fn-root"].value);
+                    if(!root) root = document;
+                    let inpEle = [...root.querySelectorAll("[ui-fn-name="+inpNm+"]")];
 
                     let input = {};
 
                     inpEle.filter(item => item.attributes["ui-fn-input"]).forEach(item => {
+                        if(item.tagName == input)
                         input[item.attributes["ui-fn-input"].value] = item.value;
+                        else
+                        input[item.attributes["ui-fn-input"].value] = item.innerHTML;
                     });
 
                     ss1view.fn[fn](input);
-                    inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
+
+                    if(inpEle[0].closest("ui-modal"))
+                        inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
                     
                 });
             });
