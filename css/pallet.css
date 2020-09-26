@@ -47,6 +47,30 @@ ui-modal .modal-window {
     position:relative; z-index:999; padding:16px; box-shadow:0 8px 16px rgba(0,0,0,0.2); border-radius:4px; -webkit-app-region: no-drag;
 }
 
+ui-snackbar {           position:fixed; z-index:1000;       }
+ui-snackbar.top {       top:16px;           }
+ui-snackbar.bottom {    bottom:16px;        }
+ui-snackbar.left {      left:16px;          }
+ui-snackbar.right {     right:16px;         }
+ui-snackbar.center {    left:50%; transform:translateX(-50%);          }
+ui-snackbar.middle {    top:50%;  transform:translateY(-50%);         }
+
+ui-snackbar .snack-window {
+    padding:12px; min-height:36px; display:-webkit-flex; display:flex; align-items:center; border-radius:4px; box-shadow:0 8px 16px rgba(0,0,0,0.2);
+}
+
+.animate { animation-duration:0.3s; }
+.animate.from-bottom-to-top:not(.snack-close) { animation-name:from-bottom-to-top; transform:translateY(0); opacity:1; }
+.animate.from-bottom-to-top.snack-close { animation-name:from-bottom-to-top-close; transform:translateY(100%); opacity:0; }
+@keyframes from-bottom-to-top {
+    0%      { transform:translateY(100%); opacity:0; }
+    100%    { transform:translateY(0); opacity:1; }
+}
+@keyframes from-bottom-to-top-close {
+    0%      { transform:translateY(0); opacity:1; }
+    100%    { transform:translateY(100%); opacity:0; }
+}
+
 header {
     background:rgb(26, 26, 26, 0.7); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); z-index:10;
 }

@@ -33,11 +33,14 @@
                                 <p  class="t-gray400 t-small" data-ui-list-contents="color">#1167BD</p>
                             </div>
                             <div class="pallet-control">
-                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy" ui-fn-root=".pallet-item">
+                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy" ui-fn-root=".pallet-item" data-snack="alertPopup">
                                     content_copy
                                     <span class="hide" data-ui-list-contents="color" ui-fn-input="color" ui-fn-name="copyElement"></span>
                                 </button>
                                 <!-- <button class="btn-open w32 h32 material-icons t-basic">open_in_new</button> -->
+                            </div>
+                            <div class="hide">
+                                <p class="oepnEdit" data-modal="addColor" ui-fn=""></p>
                             </div>
                         </li>
 
@@ -56,19 +59,19 @@
     
     <ui-modal class="hide addColor">
         <div class="modal-window main-bg w50p mxw320 mnw240">
-            <h1 class="t-basic t-normal t-gray100 mb20" data-modal-reset="Add Color"    data-ui-contents="editYN">Add Color</h1>
+            <h1 class="t-basic t-normal t-gray100 mb20" data-set="editYN" ui-form="ui/edit">Add Color</h1>
             <div class="flex-fill pb20">
                 <div class="mb20">
                     <p class="t-gray400">Name</p>
                     <input class="input w100p t-gray100 t-basic mt5 pb5 border-bottom" placeholder="Greate Color"
                            data-modal-reset
-                           ui-fn-input="name" ui-fn-name="addColor">
+                           ui-fn-input="name" ui-fn-name="addColor" data-set="name">
                 </div>
                 <div>
                     <p class="t-gray400">Code</p>
                     <input class="input w100p t-gray100 t-basic mt5 pb5 border-bottom" placeholder="#009944"
                            data-modal-reset
-                           ui-fn-input="color" ui-fn-name="addColor">
+                           ui-fn-input="color" ui-fn-name="addColor" data-set="color">
                 </div>
             </div>
             <div class="flex-box flex-right flex-middle">
@@ -77,6 +80,16 @@
             </div>
         </div>
     </ui-modal>
+
+    <ui-snackbar class="bottom center hide alertPopup">
+        <div class="snack-window animate from-bottom-to-top bg-gray800 t-yellow500">
+            <p>Copied</p>
+        </div>
+
+        <div class="hide">
+            <p data-snackbar-close="2000"></p>
+        </div>
+    </ui-snackbar>
 
     <ui-system class="titlebar">
         <ui-windows os="Windows">
@@ -166,10 +179,8 @@
                 }).forEach((item,i) => {
                     if(item.id != i+1)  input_.id = i+1;
                 });
-
                 ss1view.fn["data/localStorage/update"]({list:ss1view.fn["data/localStorage/get"]({name:"palletList"}),data:input_});
                 uiListWrap();
-                
             },
             "data/list/remove" : function(input){
                 let list = input.name;
@@ -181,7 +192,6 @@
             "data/clipboard/copy" : function(input){
                 const {clipboard} = require("electron");
                 clipboard.writeText(input[Object.keys(input)[0]]);
-                console.log(input[Object.keys(input)[0]]);
             },
 
 
@@ -244,6 +254,79 @@
         }
         ss1view.form = form_;
 
+        let gfn_  = {
+            "addEvent" : function(fnEle){
+                fnEle.forEach(item => {
+                    item.addEventListener("click",function(e){
+                        let fn = this.attributes["ui-fn"].value;
+                        let inpNm = this.attributes["ui-fn-name"].value;
+                        let root  = this.attributes["ui-fn-root"] ? this.closest(this.attributes["ui-fn-root"].value) : document;
+                        let inpEle = [...root.querySelectorAll("[ui-fn-name="+inpNm+"]")];
+
+
+                        let input = {};
+
+                        inpEle.filter(item => item.attributes["ui-fn-input"]).forEach(item => {
+                            if(item.tagName == "INPUT")
+                            input[item.attributes["ui-fn-input"].value] = item.value;
+                            else
+                            input[item.attributes["ui-fn-input"].value] = item.innerHTML;
+                        });
+
+                        ss1view.fn[fn](input);
+
+                        if(this.attributes["ui-fn-next"]){
+                            let fnNext = this.attributes["ui-fn-next"].value;
+                            let next = [...document.querySelectorAll(fnNext)];
+                            next.forEach(item => {
+                                next.click();
+                            });
+                        }
+
+                        if(inpEle[0].closest("ui-modal"))
+                            inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
+                        
+                    });
+                });
+            },
+            "call/snack" : function(callSnack){
+                callSnack.forEach(item => {
+                    item.addEventListener("click",function(e){
+                        const snack = this.attributes["data-snack"].value;
+                        const tg    = document.querySelector("."+snack);
+
+                        if(tg.snack){
+                            clearTimeout(tg.timeoutAnimate);
+                            clearTimeout(tg.timeoutSnack);
+                        }
+
+                        const snackWindow  = tg.querySelector(".snack-window");
+                        const snackClose = tg.querySelector("[data-snackbar-close]");
+                        tg.classList.remove("hide");
+
+                        if(snackClose){
+                            tg.snack = true;
+                            let time = +(snackClose.attributes["data-snackbar-close"].value);
+                            if([...snackWindow.classList].includes("animate")){
+                                let aniTime = +(getComputedStyle(snackWindow).animationDuration.replace("s",""))*1000;
+                                tg.timeoutAnimate = setTimeout(function(e){
+                                    snackWindow.classList.add("snack-close");
+                                },time);
+                                time += aniTime;
+                            }
+                            tg.timeoutSnack = setTimeout(function(e){
+                                tg.classList.add("hide");
+                                snackWindow.classList.remove("snack-close");
+                                tg.snack = false;
+                            },time);
+                        }
+                    });
+                });
+            }
+        }
+    
+        ss1view.gfn = gfn_;
+
         (function(){
             uiListWrap();
         })();
@@ -274,15 +357,15 @@
                     document.querySelector("."+modal).classList.remove("hide");
                 });
             });
+            
 
             let modalClose = [...document.querySelectorAll("[data-modal-close]")];
             modalClose.forEach(item => {
                 item.addEventListener("click",function(e){
                     let modal = this.closest("ui-modal");
                     let resetInp = [...modal.querySelectorAll("[data-modal-reset]")];
-                    console.log(resetInp);
                     resetInp.forEach(item => {
-                        if(item.tagName == "input")
+                        if(item.tagName == "INPUT")
                         item.value = item.attributes["data-modal-reset"].value;
                         else
                         item.innerHTML = item.attributes["data-modal-reset"].value;
@@ -292,30 +375,8 @@
             });
 
             let fnEle = [...document.querySelectorAll("[ui-fn]")];
-            fnEle.forEach(item => {
-                item.addEventListener("click",function(e){
-                    let fn = this.attributes["ui-fn"].value;
-                    let inpNm = this.attributes["ui-fn-name"].value;
-                    let root  = this.closest(this.attributes["ui-fn-root"].value);
-                    if(!root) root = document;
-                    let inpEle = [...root.querySelectorAll("[ui-fn-name="+inpNm+"]")];
+            ss1view.gfn["addEvent"](fnEle);
 
-                    let input = {};
-
-                    inpEle.filter(item => item.attributes["ui-fn-input"]).forEach(item => {
-                        if(item.tagName == input)
-                        input[item.attributes["ui-fn-input"].value] = item.value;
-                        else
-                        input[item.attributes["ui-fn-input"].value] = item.innerHTML;
-                    });
-
-                    ss1view.fn[fn](input);
-
-                    if(inpEle[0].closest("ui-modal"))
-                        inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
-                    
-                });
-            });
         })();
 
         (function(){
@@ -396,6 +457,8 @@
             rmv.forEach(item => item.remove());
 
             let rt = [];
+            let fnEle = []
+            let callSnack = []
 
             list[key].forEach((item,i) => {
                 let contents = root.cloneNode(true);
@@ -406,10 +469,12 @@
                 setData(item,contents,true);
                 ele.append(contents);
                 dfltLast[0].before(contents);
-
+                fnEle = fnEle.concat([...contents.querySelectorAll("[ui-fn]")]);
+                callSnack = callSnack.concat([...document.querySelectorAll("[data-snack]")])
                 rt.push(contents);
             });
-
+            ss1view.gfn["addEvent"](fnEle);
+            ss1view.gfn["call/snack"](fnEle);
             return rt;
         }
         function getUiList(ele){
