@@ -33,20 +33,26 @@
                                 <p  class="t-gray400 t-small" data-ui-list-contents="color">#1167BD</p>
                             </div>
                             <div class="pallet-control">
-                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy" ui-fn-root=".pallet-item" data-snack="alertPopup">
+                                <button class="btn-copy-color w48 h48 material-icons" ui-fn-name="copyElement" ui-fn="data/clipboard/copy" ui-fn-grp=".pallet-item" data-snack="alertPopup">
                                     content_copy
                                     <span class="hide" data-ui-list-contents="color" ui-fn-input="color" ui-fn-name="copyElement"></span>
                                 </button>
                                 <!-- <button class="btn-open w32 h32 material-icons t-basic">open_in_new</button> -->
                             </div>
                             <div class="hide">
-                                <p class="oepnEdit" data-modal="addColor" ui-fn=""></p>
+                                <p class="oepnEdit" data-modal=".addColor" ui-fn="data/clone" ui-fn-grp=".hide" ui-fn-root=".addColor" ui-fn-name="idClone"></p>
+                                <p data-ui-list-contents="id"                                                         ui-fn-input="id"       ui-fn-name="idClone"></p>
+                                <p data-ui-list-contents="name"                                                       ui-fn-input="name"     ui-fn-name="idClone"></p>
+                                <p data-ui-list-contents="color"                                                      ui-fn-input="color"    ui-fn-name="idClone"></p>
+                                <p data-ui-list-contents="editYN"                                                     ui-fn-input="editYN"   ui-fn-name="idClone">Y</p>
                             </div>
                         </li>
 
                         <li class="pallet-item flex-box" data-ui-list-contents-default="last">
                             <div class="pallet-control show">
-                                <button class="btn-add-color w48 h48 material-icons" data-modal="addColor">add</button>
+                                <button class="btn-add-color w48 h48 material-icons" data-modal=".addColor"
+                                        ui-fn="data/clone"       ui-fn-grp=".pallet-control"             ui-fn-root=".addColor" ui-fn-name="idClone">add</button>
+                                <p class="hide" data-ui-list-contents="editYN"                           ui-fn-input="editYN"   ui-fn-name="idClone">N</p>
                             </div>
                         </li>
                     </ul>
@@ -75,7 +81,8 @@
                 </div>
             </div>
             <div class="flex-box flex-right flex-middle">
-                <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/add" ui-fn-name="addColor">Save</div>
+                <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/add" ui-fn-name="addColor" ui-form="ui/Yhide" data-set="editYN">Save</div>
+                <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/add" ui-fn-name="addColor" ui-form="ui/Yshow" data-set="editYN">Edit</div>
                 <div class="ui-btn ui-btn-transparent flat t-gray300" data-modal-close>Cancle</div>
             </div>
         </div>
@@ -111,6 +118,10 @@
             },
             "debug/alert" : function(input){
                 alert(input);
+            },
+            "data/clone" : function(input){
+                console.log("clone :: ",input);
+                return input;
             },
             "data/localStorage/set" : function(input){
                 localStorage.setItem(input.name,JSON.stringify(input.data));
@@ -212,8 +223,10 @@
                     {
                         label : "Edit",
                         click(e,win,con) {
-                            console.log("Edit");
-                            document.querySelector(".btn-add-color").click();
+                            const pallet = document.querySelector(".pallet-list");
+                            let tg = pallet.querySelector("[data-ui-list-key='"+rightClickColor+"']");
+                            tg = tg.querySelector(".oepnEdit");
+                            tg.click();
                         }
                     },{
                         label : "Delete",
@@ -247,9 +260,21 @@
             "debug/consoleLog" : function(data,key,item){
                 console.log(data);
             },
-            color2bg : function(data,key,item){
+            "color2bg" : function(data,key,item){
                 item.style.background = data[key];
                 return;
+            },
+            "ui/edit" : function(data,key,item){
+                if(data[key] == "Y")        return "Edit Color";
+                else                        return "Add Color";
+            },
+            "ui/Yshow" : function(data,key,item){
+                if(data[key] == "Y")        item.classList.remove("hide");
+                else if(data[key] == "N")   item.classList.add("hide");
+            },
+            "ui/Yhide" : function(data,key,item){
+                if(data[key] == "N")        item.classList.remove("hide");
+                else if(data[key] == "Y")   item.classList.add("hide");
             }
         }
         ss1view.form = form_;
@@ -257,79 +282,102 @@
         let gfn_  = {
             "addEvent" : function(fnEle){
                 fnEle.forEach(item => {
-                    item.addEventListener("click",function(e){
-                        let fn = this.attributes["ui-fn"].value;
-                        let inpNm = this.attributes["ui-fn-name"].value;
-                        let root  = this.attributes["ui-fn-root"] ? this.closest(this.attributes["ui-fn-root"].value) : document;
-                        let inpEle = [...root.querySelectorAll("[ui-fn-name="+inpNm+"]")];
-
-
-                        let input = {};
-
-                        inpEle.filter(item => item.attributes["ui-fn-input"]).forEach(item => {
-                            if(item.tagName == "INPUT")
-                            input[item.attributes["ui-fn-input"].value] = item.value;
-                            else
-                            input[item.attributes["ui-fn-input"].value] = item.innerHTML;
-                        });
-
-                        ss1view.fn[fn](input);
-
-                        if(this.attributes["ui-fn-next"]){
-                            let fnNext = this.attributes["ui-fn-next"].value;
-                            let next = [...document.querySelectorAll(fnNext)];
-                            next.forEach(item => {
-                                next.click();
+                    if(item.closest("[data-ui-list-contents-root]")) return;
+                    item.setAttribute("data-event-listing","true");
+                    let item_ = item.attributes["ui-fn"] ? item.attributes["ui-fn"].value : "";
+                    if(item_ !== ""){
+                        item.addEventListener("click",function(e){
+                            let fn = this.attributes["ui-fn"] ? this.attributes["ui-fn"].value : "";
+                            let inpNm = this.attributes["ui-fn-name"] ? this.attributes["ui-fn-name"].value : "";
+                            let root  = this.attributes["ui-fn-grp"] ? this.closest(this.attributes["ui-fn-grp"].value) : document;
+                            // let inpEle = [...root.querySelectorAll("[ui-fn-name="+inpNm+"]")];
+                            let inpEle = [...root.querySelectorAll("[ui-fn-name]")].filter(item => {
+                                return item.attributes["ui-fn-name"].value.split(" ").includes(inpNm);
                             });
-                        }
 
-                        if(inpEle[0].closest("ui-modal"))
-                            inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
-                        
-                    });
+                            let input = {};
+
+                            inpEle.filter(item => item.attributes["ui-fn-input"]).forEach(item => {
+                                if(item.tagName == "INPUT")
+                                input[item.attributes["ui-fn-input"].value] = item.value;
+                                else
+                                input[item.attributes["ui-fn-input"].value] = item.innerHTML;
+                            });
+
+                            let rt = ss1view.fn[fn](input);
+
+                            if(rt !== undefined){
+                                let root_ = this.attributes["ui-fn-root"] ? this.attributes["ui-fn-root"].value : document;
+                                setData(rt,document.querySelector(root_));
+                            }
+
+                            if(this.attributes["ui-fn-next"]){
+                                let fnNext = this.attributes["ui-fn-next"].value;
+                                let next = [...document.querySelectorAll(fnNext)];
+                                next.forEach(item => {
+                                    next.click();
+                                });
+                            }
+
+                            if(inpEle[0] && inpEle[0].closest("ui-modal"))
+                                inpEle[0].closest("ui-modal").querySelector("[data-modal-close]").click();
+                            
+                        });
+                    }
                 });
             },
             "call/snack" : function(callSnack){
                 callSnack.forEach(item => {
-                    item.addEventListener("click",function(e){
-                        const snack = this.attributes["data-snack"].value;
-                        const tg    = document.querySelector("."+snack);
+                    if(item.closest("[data-ui-list-contents-root]")) return;
+                    item.setAttribute("data-calling-snack","true");
+                    let item_ = item.attributes["data-snack"] ? item.attributes["data-snack"].value : "";
+                    if(item_ !== ""){
+                        item.addEventListener("click",function(e){
+                            const snack = this.attributes["data-snack"].value;
+                            const tg    = document.querySelector("."+snack);
 
-                        if(tg.snack){
-                            clearTimeout(tg.timeoutAnimate);
-                            clearTimeout(tg.timeoutSnack);
-                        }
-
-                        const snackWindow  = tg.querySelector(".snack-window");
-                        const snackClose = tg.querySelector("[data-snackbar-close]");
-                        tg.classList.remove("hide");
-
-                        if(snackClose){
-                            tg.snack = true;
-                            let time = +(snackClose.attributes["data-snackbar-close"].value);
-                            if([...snackWindow.classList].includes("animate")){
-                                let aniTime = +(getComputedStyle(snackWindow).animationDuration.replace("s",""))*1000;
-                                tg.timeoutAnimate = setTimeout(function(e){
-                                    snackWindow.classList.add("snack-close");
-                                },time);
-                                time += aniTime;
+                            if(tg.snack){
+                                clearTimeout(tg.timeoutAnimate);
+                                clearTimeout(tg.timeoutSnack);
                             }
-                            tg.timeoutSnack = setTimeout(function(e){
-                                tg.classList.add("hide");
-                                snackWindow.classList.remove("snack-close");
-                                tg.snack = false;
-                            },time);
-                        }
+
+                            const snackWindow  = tg.querySelector(".snack-window");
+                            const snackClose = tg.querySelector("[data-snackbar-close]");
+                            tg.classList.remove("hide");
+
+                            if(snackClose){
+                                tg.snack = true;
+                                let time = +(snackClose.attributes["data-snackbar-close"].value);
+                                if([...snackWindow.classList].includes("animate")){
+                                    let aniTime = +(getComputedStyle(snackWindow).animationDuration.replace("s",""))*1000;
+                                    tg.timeoutAnimate = setTimeout(function(e){
+                                        snackWindow.classList.add("snack-close");
+                                    },time);
+                                    time += aniTime;
+                                }
+                                tg.timeoutSnack = setTimeout(function(e){
+                                    tg.classList.add("hide");
+                                    snackWindow.classList.remove("snack-close");
+                                    tg.snack = false;
+                                },time);
+                            }
+                        });
+                    }
+                });
+            },
+            "call/modal" : function(callModal){
+                callModal.forEach(item => {
+                    if(item.closest("[data-ui-list-contents-root]")) return;
+                    item.setAttribute("data-calling-modal","true");
+                    item.addEventListener("click",function(e){
+                        let modal = this.attributes["data-modal"].value;
+                        document.querySelector(modal).classList.remove("hide");
                     });
                 });
             }
         }
     
         ss1view.gfn = gfn_;
-
-        (function(){
-            uiListWrap();
-        })();
 
         (function(){
             if (!ss1view.fn["data/getApp"]())   return;
@@ -350,14 +398,13 @@
             });
         })();
         (function(){
+
+            let fnEle = [...document.querySelectorAll("[ui-fn]")];
+            ss1view.gfn["addEvent"](fnEle);
             let callModal = [...document.querySelectorAll("[data-modal]")];
-            callModal.forEach(item => {
-                item.addEventListener("click",function(e){
-                    let modal = this.attributes["data-modal"].value;
-                    document.querySelector("."+modal).classList.remove("hide");
-                });
-            });
-            
+            ss1view.gfn["call/modal"](callModal);
+            let callSnack = [...document.querySelectorAll("[data-snack]")];
+            ss1view.gfn["call/snack"](callSnack);
 
             let modalClose = [...document.querySelectorAll("[data-modal-close]")];
             modalClose.forEach(item => {
@@ -373,9 +420,6 @@
                     modal.classList.add("hide");
                 });
             });
-
-            let fnEle = [...document.querySelectorAll("[ui-fn]")];
-            ss1view.gfn["addEvent"](fnEle);
 
         })();
 
@@ -440,7 +484,11 @@
                     let fnName = item.attributes["ui-form"] ? item.attributes["ui-form"].value : "";
                     let rt = data[key];
                     if(fnName != "")     rt = formData(fnName,data,key,item);
-                    item.innerHTML = rt;
+                    if(!rt) return;
+                    if(item.tagName == "INPUT")
+                        item.value = rt;
+                    else
+                        item.innerHTML = rt;
                 });
             }
         }
@@ -459,6 +507,7 @@
             let rt = [];
             let fnEle = []
             let callSnack = []
+            let modal = []
 
             list[key].forEach((item,i) => {
                 let contents = root.cloneNode(true);
@@ -469,12 +518,26 @@
                 setData(item,contents,true);
                 ele.append(contents);
                 dfltLast[0].before(contents);
-                fnEle = fnEle.concat([...contents.querySelectorAll("[ui-fn]")]);
-                callSnack = callSnack.concat([...document.querySelectorAll("[data-snack]")])
+                fnEle = [...contents.querySelectorAll("[ui-fn]")];
+                fnEle.forEach(item_ => {
+                    if(!item_.attributes["data-event-listing"]){
+                        ss1view.gfn["addEvent"]([item_]);
+                    }
+                });
+                callSnack = [...document.querySelectorAll("[data-snack]")];
+                callSnack.forEach(item_ => {
+                    if(!item_.attributes["data-calling-snack"])
+                        ss1view.gfn["call/snack"]([item_]);
+                });
+                modal = [...document.querySelectorAll("[data-modal]")];
+                modal.forEach(item_ => {
+                    if(!item_.attributes["data-calling-modal"])
+                        ss1view.gfn["call/modal"]([item_]);
+                });
                 rt.push(contents);
             });
-            ss1view.gfn["addEvent"](fnEle);
-            ss1view.gfn["call/snack"](fnEle);
+            // ss1view.gfn["addEvent"](fnEle);
+            // ss1view.gfn["call/snack"](fnEle);
             return rt;
         }
         function getUiList(ele){
@@ -486,6 +549,13 @@
             uiList(palletColor);
             ss1view.fn["app/context/pallet"]();
         }
+
+
+        
+
+        (function(){
+            uiListWrap();
+        })();
 
     </script>
     
