@@ -71,18 +71,22 @@
                     <p class="t-gray400">Name</p>
                     <input class="input w100p t-gray100 t-basic mt5 pb5 border-bottom" placeholder="Greate Color"
                            data-modal-reset
-                           ui-fn-input="name" ui-fn-name="addColor" data-set="name">
+                           ui-fn-input="name" ui-fn-name="addColor editColor" data-set="name">
                 </div>
                 <div>
                     <p class="t-gray400">Code</p>
                     <input class="input w100p t-gray100 t-basic mt5 pb5 border-bottom" placeholder="#009944"
                            data-modal-reset
-                           ui-fn-input="color" ui-fn-name="addColor" data-set="color">
+                           ui-fn-input="color" ui-fn-name="addColor editColor" data-set="color">
+                </div>
+
+                <div class="hide">
+                    <p data-modal-reset ui-fn-input="id" ui-fn-name="editColor" data-set="id"></p>
                 </div>
             </div>
             <div class="flex-box flex-right flex-middle">
                 <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/add" ui-fn-name="addColor" ui-form="ui/Yhide" data-set="editYN">Save</div>
-                <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/add" ui-fn-name="addColor" ui-form="ui/Yshow" data-set="editYN">Edit</div>
+                <div class="ui-btn ui-btn-transparent flat t-blue400" ui-fn="data/pallet/edit" ui-fn-name="editColor" ui-form="ui/Yshow" data-set="editYN">Edit</div>
                 <div class="ui-btn ui-btn-transparent flat t-gray300" data-modal-close>Cancle</div>
             </div>
         </div>
@@ -187,10 +191,29 @@
                 input_["id"] = list.palletList.length+1;
                 list.palletList.sort((item1,item2) => {
                     return item1.id > item2.id ? 1 : -1
-                }).forEach((item,i) => {
-                    if(item.id != i+1)  input_.id = i+1;
+                }).some((item,i,arr) => {
+                    if(item.id != i+1){
+                        input_.id = i+1;
+                    }
+                    return item.id != i+1;
                 });
                 ss1view.fn["data/localStorage/update"]({list:ss1view.fn["data/localStorage/get"]({name:"palletList"}),data:input_});
+                uiListWrap();
+            },
+            "data/pallet/edit" : function(input){
+                let input_ = input;
+                let list = ss1view.fn["data/localStorage/get"]({name:"palletList"});
+                console.log(list);
+                let rt = list.palletList.map(item => {
+                    if(item.id == input.id){
+                        item.name = input.name;
+                        item.color = input.color;
+                    }
+                    return item;
+                });
+
+                ss1view.fn["data/localStorage/set"]({name:"palletList",data:rt});
+
                 uiListWrap();
             },
             "data/list/remove" : function(input){
